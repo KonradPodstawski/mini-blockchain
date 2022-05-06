@@ -1,0 +1,11 @@
+[package]
+name = "mini-blockchain"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+chrono = "0.4.10"
+sha256 = "1.0.0"
+wasmer = "2.2.0"
+anyhow = "1.0.56"
+wasmer-wasi = "2.2.1"
