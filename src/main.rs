@@ -47,7 +47,6 @@ pub fn get_time() -> String {
 impl Blockchain {
 
     fn add_block_with_data(&mut self, my_data: String) {
-
         let time_stamp = get_time();
         let data_to_hash = my_data.clone();
         let hash = calc_hash(time_stamp.clone(), data_to_hash, self.last_hash());
@@ -59,14 +58,25 @@ impl Blockchain {
     }
 
     fn add_block_with_contract(&mut self, name_contract_file: String) -> Result<(), Error> {
-
         let time_stamp = get_time();
-
         let data_to_hash = name_contract_file.clone();
-
         let hash = calc_hash(time_stamp.clone(), data_to_hash, self.last_hash());
         let prev_hash = self.last_hash();
 
+        match Blockchain::load_contract(name_contract_file.clone()) {
+            Ok(contract) => {
+                let new_block = Block { time_stamp , data: name_contract_file, hash, prev_hash, contract };
+                self.chain.push(new_block);
+                Ok(())
+            }
+            Err(e) => {
+                println!("{:?}", e);
+                Err(e)
+            }
+        }
+    }
+
+    pub fn load_contract(name_contract_file: String) -> Result<Option<Instance>, Error> {
         let store = Store::default();
         let module = Module::from_file(&store, name_contract_file.clone() + ".wasm")?;
     
@@ -74,12 +84,7 @@ impl Blockchain {
         .finalize()?;
     
         let import_object = wasi_env.import_object(&module)?;
-        let contract = Some(Instance::new(&module, &import_object)?);
-
-        let new_block = Block { time_stamp , data: format!("On this block is contract: {}", name_contract_file), hash, prev_hash, contract };
-        self.chain.push(new_block);
-
-        Ok(())
+        Ok(Some(Instance::new(&module, &import_object)?))
     }
 
     fn last_hash(&self) -> String {
