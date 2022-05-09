@@ -9,7 +9,7 @@ use wasmer_wasi::WasiState;
 
 #[derive(Clone, Debug)]
 struct Block {
-    time_stamp: SystemTime,
+    time_stamp: String,
     data: String,
     hash: String,
     prev_hash: String,
@@ -38,27 +38,33 @@ fn calc_hash(time_stamp: String, data_to_hash: String, prev_hash: String) -> Str
     digest(time_stamp + &data_to_hash + &prev_hash)
 }
 
+pub fn get_time() -> String {
+    let system_time = SystemTime::now();
+    let time_stamp: DateTime<Utc> = system_time.into();
+    time_stamp.format("%d/%m/%Y %T").to_string()
+}
+
 impl Blockchain {
 
     fn add_block_with_data(&mut self, my_data: String) {
-        let system_time = SystemTime::now();
-        let time_stamp: DateTime<Utc> = system_time.into();
-        let time_stamp = time_stamp.format("%d/%m/%Y %T").to_string();
+
+        let time_stamp = get_time();
         let data_to_hash = my_data.clone();
-        let hash = calc_hash(time_stamp, data_to_hash, self.last_hash());
+        let hash = calc_hash(time_stamp.clone(), data_to_hash, self.last_hash());
         let prev_hash = self.last_hash();
         let contract = None;
 
-        let new_block = Block { time_stamp: system_time , data: my_data, hash, prev_hash, contract };
+        let new_block = Block { time_stamp , data: my_data, hash, prev_hash, contract };
         self.chain.push(new_block);
     }
 
     fn add_block_with_contract(&mut self, name_contract_file: String) -> Result<(), Error> {
-        let system_time = SystemTime::now();
-        let time_stamp: DateTime<Utc> = system_time.into();
-        let time_stamp = time_stamp.format("%d/%m/%Y %T").to_string();
+
+        let time_stamp = get_time();
+
         let data_to_hash = name_contract_file.clone();
-        let hash = calc_hash(time_stamp, data_to_hash, self.last_hash());
+
+        let hash = calc_hash(time_stamp.clone(), data_to_hash, self.last_hash());
         let prev_hash = self.last_hash();
 
         let store = Store::default();
@@ -70,7 +76,7 @@ impl Blockchain {
         let import_object = wasi_env.import_object(&module)?;
         let contract = Some(Instance::new(&module, &import_object)?);
 
-        let new_block = Block { time_stamp: system_time , data: format!("On this block is contract: {}", name_contract_file), hash, prev_hash, contract };
+        let new_block = Block { time_stamp , data: format!("On this block is contract: {}", name_contract_file), hash, prev_hash, contract };
         self.chain.push(new_block);
 
         Ok(())
